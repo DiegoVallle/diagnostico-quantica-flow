@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico Terapêutico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6fb;
+    --surface: #ffffff;
+    --text: #2d0041;
+    --text-muted: #7d6a8a;
+    --border: #ecdff2;
+    --primary: #f90977;
+    --primary-hover: #c90070;
+    --purple: #6e099b;
+    --purple-dark: #2d0041;
+    --gold: #f3b007;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(45,0,65,0.05), 0 8px 24px rgba(45,0,65,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a0329;
+      --surface: #2d0041;
+      --text: #f5eaf9;
+      --text-muted: #c3a9d1;
+      --border: #4c1e3f;
+      --primary: #f90977;
+      --primary-hover: #ff3d92;
+      --purple: #9b51e0;
+      --purple-dark: #1a0329;
+      --gold: #f3b007;
+      --danger: #ef4444;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .app { width: 100%; max-width: 680px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 32px;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  h1 { font-family: "Cinzel Decorative", serif; font-size: 1.3rem; line-height: 1.4; margin: 0 0 10px; color: var(--purple); }
+  h2 { font-family: "Cinzel Decorative", serif; font-size: 0.95rem; margin: 0 0 12px; color: var(--purple); }
+  p.subtitle { color: var(--text-muted); margin: 0 0 20px; line-height: 1.55; font-size: 0.92rem; }
+
+  .notice {
+    border: 1px solid var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+    width: 100%;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--purple);
+    border: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  .btn.secondary:hover { background: var(--bg); }
+
+  /* Form fields */
+  .field { margin-bottom: 26px; }
+  .field-label {
+    font-weight: 600;
+    font-size: 0.93rem;
+    display: block;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .field-label .req { color: var(--danger); }
+  .field-hint { font-size: 0.8rem; color: var(--text-muted); margin: -4px 0 8px; }
+
+  input[type="text"], input[type="email"], input[type="tel"], textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.94rem;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .choice-group { display: flex; flex-direction: column; gap: 8px; }
+  .choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .choice:hover { border-color: var(--primary); }
+  .choice:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); font-weight: 600; }
+  .choice input { accent-color: var(--primary); width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px; }
+
+  .field.field-error .field-label { color: var(--danger); }
+  .field.field-error .choice-group .choice,
+  .field.field-error input[type="text"],
+  .field.field-error input[type="email"],
+  .field.field-error input[type="tel"] { border-color: var(--danger); }
+  .field-error-msg { color: var(--danger); font-size: 0.8rem; margin-top: 6px; display: none; }
+  .field.field-error .field-error-msg { display: block; }
+
+  .thankyou-icon { font-size: 2.6rem; margin-bottom: 8px; }
+
+  footer.hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Tela inicial -->
+  <div class="card screen active" id="screen-start">
+    <h1>Solicite agora seu Diagnóstico Terapêutico!</h1>
+    <p class="subtitle">
+      Este primeiro passo de preenchimento do formulário é <strong>gratuito</strong>. Caso seu formulário
+      seja aprovado, nossa equipe entrará em contato para agendar seu diagnóstico com um de nossos
+      especialistas. Preencha com clareza e seriedade — é a partir dessas informações que avaliaremos
+      a disponibilidade de agenda com o especialista mais adequado ao seu momento profissional.
+    </p>
+    <div class="notice">
+      ⚠️ Se após o agendamento você cancelar ou não comparecer, será cobrado <strong>R$ 97,00</strong>
+      para reagendamento, de acordo com nossa disponibilidade. Ao final do diagnóstico, dependendo do
+      resultado, você poderá receber um convite para a mentoria <strong>"Acelerador Terapeuta Flow"</strong>.
+    </div>
+    <button class="btn" onclick="goToForm()">Iniciar solicitação</button>
+  </div>
+
+  <!-- Tela do formulário -->
+  <div class="card screen" id="screen-form">
+    <h1>Formulário de Diagnóstico</h1>
+    <p class="subtitle">Campos com <span class="req">*</span> são obrigatórios.</p>
+
+    <form id="lead-form" novalidate>
+
+      <div class="field" data-field="nome">
+        <label class="field-label" for="f-nome">Seu Nome <span class="req">*</span></label>
+        <input type="text" id="f-nome">
+        <div class="field-error-msg">Preencha seu nome.</div>
+      </div>
+
+      <div class="field" data-field="email">
+        <label class="field-label" for="f-email">Seu melhor E-mail (o que você consegue abrir) <span class="req">*</span></label>
+        <input type="email" id="f-email">
+        <div class="field-error-msg">Preencha um e-mail válido.</div>
+      </div>
+
+      <div class="field" data-field="whatsapp">
+        <label class="field-label" for="f-whatsapp">Número de telefone Whatsapp <span class="req">*</span></label>
+        <input type="tel" id="f-whatsapp" placeholder="(11) 98888-1234" maxlength="15" inputmode="numeric">
+        <div class="field-error-msg">Preencha um WhatsApp válido, com DDD.</div>
+      </div>
+
+      <div class="field" data-field="fez_curso">
+        <label class="field-label">Já fez ou faz algum curso da Quântica Flow? <span class="req">*</span></label>
+        <div class="choice-group" data-name="fez_curso">
+          <label class="choice"><input type="radio" name="fez_curso" value="Sim"> Sim</label>
+          <label class="choice"><input type="radio" name="fez_curso" value="Não"> Não</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" id="field-quais-cursos" style="display:none">
+        <label class="field-label">Se sua resposta anterior foi SIM, selecione quais:</label>
+        <div class="choice-group" id="quais-cursos-group"></div>
+      </div>
+
+      <div class="field" data-field="tempo_acompanha">
+        <label class="field-label">Há quanto tempo acompanha nosso trabalho nas redes sociais? (@quanticaflow) <span class="req">*</span></label>
+        <div class="choice-group" data-name="tempo_acompanha">
+          <label class="choice"><input type="radio" name="tempo_acompanha" value="Mais de 1 ano"> Mais de 1 ano</label>
+          <label class="choice"><input type="radio" name="tempo_acompanha" value="+ou- uns 6 meses"> +ou- uns 6 meses</label>
+          <label class="choice"><input type="radio" name="tempo_acompanha" value="+ou- uns 3 meses"> +ou- uns 3 meses</label>
+          <label class="choice"><input type="radio" name="tempo_acompanha" value="Acabei de conhecer agora"> Acabei de conhecer agora</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="como_se_ve">
+        <label class="field-label">Como você se vê como Terapeuta? <span class="req">*</span></label>
+        <div class="choice-group" data-name="como_se_ve">
+          <label class="choice"><input type="radio" name="como_se_ve" value="Terapeuta de Si mesma (Não tenho renda nenhuma com atendimentos)"> Terapeuta de Si mesma (Não tenho renda nenhuma com atendimentos)</label>
+          <label class="choice"><input type="radio" name="como_se_ve" value="Quero me capacitar para atender profissionalmente (Já tenho renda extra com atendimentos)"> Quero me capacitar para atender profissionalmente (Já tenho renda extra com atendimentos)</label>
+          <label class="choice"><input type="radio" name="como_se_ve" value="Já trabalho de forma profissional como Terapeuta (Renda Principal)"> Já trabalho de forma profissional como Terapeuta (Renda Principal)</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="faturamento_vida">
+        <label class="field-label">Caso já tenha atendido com qualquer terapia holística ou integrativa, quanto você talvez já tenha faturado (NA VIDA) com seu trabalho? <span class="req">*</span></label>
+        <div class="choice-group" data-name="faturamento_vida"></div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="faturamento_mensal">
+        <label class="field-label">E MENSALMENTE, quanto em média você fatura com atendimentos? <span class="req">*</span></label>
+        <div class="choice-group" data-name="faturamento_mensal"></div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="renda_familiar">
+        <label class="field-label">Qual sua Renda Mensal Familiar atualmente? (terapias + outras rendas, somando com cônjuge se for o caso) <span class="req">*</span></label>
+        <div class="choice-group" data-name="renda_familiar">
+          <label class="choice"><input type="radio" name="renda_familiar" value="Abaixo de 1 salário mínimo (R$ 1.518,00)"> Abaixo de 1 salário mínimo (R$ 1.518,00)</label>
+          <label class="choice"><input type="radio" name="renda_familiar" value="Entre R$ 1.500 e R$ 3.000 reais"> Entre R$ 1.500 e R$ 3.000 reais</label>
+          <label class="choice"><input type="radio" name="renda_familiar" value="Entre R$ 3.001 e R$ 5.000 reais"> Entre R$ 3.001 e R$ 5.000 reais</label>
+          <label class="choice"><input type="radio" name="renda_familiar" value="Entre R$ 5.001 e 8.000 reais"> Entre R$ 5.001 e 8.000 reais</label>
+          <label class="choice"><input type="radio" name="renda_familiar" value="Acima de R$ 8.001 reais"> Acima de R$ 8.001 reais</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="renda_desejada">
+        <label class="field-label">Quanto você GOSTARIA de ter de Renda Mensal Individual, só sua e somente com TERAPIAS? <span class="req">*</span></label>
+        <div class="choice-group" data-name="renda_desejada">
+          <label class="choice"><input type="radio" name="renda_desejada" value="Entre R$ 3.001 e R$ 5.000 reais"> Entre R$ 3.001 e R$ 5.000 reais</label>
+          <label class="choice"><input type="radio" name="renda_desejada" value="Entre R$ 5.001 e 8.000 reais"> Entre R$ 5.001 e 8.000 reais</label>
+          <label class="choice"><input type="radio" name="renda_desejada" value="Entre R$ 8.001 e R$ 10 Mil reais"> Entre R$ 8.001 e R$ 10 Mil reais</label>
+          <label class="choice"><input type="radio" name="renda_desejada" value="Acima de R$ 10 Mil reais"> Acima de R$ 10 Mil reais</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="situacao_profissional">
+        <label class="field-label">Neste momento, como está sua vida profissional? <span class="req">*</span></label>
+        <div class="choice-group" data-name="situacao_profissional">
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Tenho um emprego convencional, só faço atendimentos terapêuticos gratuitos, mas quero começar a cobrar"> Tenho um emprego convencional, só faço atendimentos terapêuticos gratuitos, mas quero começar a cobrar</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Tenho um emprego convencional e faço atendimentos terapêuticos como renda extra"> Tenho um emprego convencional e faço atendimentos terapêuticos como renda extra</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Tenho um emprego convencional, mas quero fazer minha transição para trabalhar apenas como Terapeuta"> Tenho um emprego convencional, mas quero fazer minha transição para trabalhar apenas como Terapeuta</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Estou aposentada(o), e só faço atendimentos terapêuticos gratuitos"> Estou aposentada(o), e só faço atendimentos terapêuticos gratuitos</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Estou aposentada(o), já faço atendimentos terapêuticos e quero me profissionalizar"> Estou aposentada(o), já faço atendimentos terapêuticos e quero me profissionalizar</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Já atuo 100% como Terapeuta, porém, quero me profissionalizar para aumentar meu faturamento"> Já atuo 100% como Terapeuta, porém, quero me profissionalizar para aumentar meu faturamento</label>
+          <label class="choice"><input type="radio" name="situacao_profissional" value="Estou desempregada(o) e não tenho nenhuma fonte de renda"> Estou desempregada(o) e não tenho nenhuma fonte de renda</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="ja_participou_mentoria">
+        <label class="field-label">Você já participou de alguma Mentoria ou Programa de Desenvolvimento voltado para sua profissionalização como Terapeuta? <span class="req">*</span></label>
+        <div class="choice-group" data-name="ja_participou_mentoria">
+          <label class="choice"><input type="radio" name="ja_participou_mentoria" value="Sim"> Sim</label>
+          <label class="choice"><input type="radio" name="ja_participou_mentoria" value="Não"> Não</label>
+          <label class="choice"><input type="radio" name="ja_participou_mentoria" value="Até o momento não, mas entendo que me ajudaria bastante ✅"> Até o momento não, mas entendo que me ajudaria bastante ✅</label>
+          <label class="choice"><input type="radio" name="ja_participou_mentoria" value="Nunca pensei nisso, pois não tenho interesse de viver como Terapeuta 🚫"> Nunca pensei nisso, pois não tenho interesse de viver como Terapeuta 🚫</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="participou_aula">
+        <label class="field-label">Você participou da aula "Aprenda como Faturar Mil Reais em 7 Dias com Terapias Holísticas"? <span class="req">*</span></label>
+        <div class="choice-group" data-name="participou_aula">
+          <label class="choice"><input type="radio" name="participou_aula" value="Sim"> Sim</label>
+          <label class="choice"><input type="radio" name="participou_aula" value="Não"> Não</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="periodo">
+        <label class="field-label">Qual o melhor período para tentarmos agendar uma reunião de diagnóstico contigo? <span class="req">*</span></label>
+        <div class="choice-group" data-name="periodo">
+          <label class="choice"><input type="radio" name="periodo" value="Manhã (Entre 09h e 12 horas)"> Manhã (Entre 09h e 12 horas)</label>
+          <label class="choice"><input type="radio" name="periodo" value="Tarde (Entre 13h e 17 horas)"> Tarde (Entre 13h e 17 horas)</label>
+          <label class="choice"><input type="radio" name="periodo" value="Noite (Entre 18h e 20 horas)"> Noite (Entre 18h e 20 horas)</label>
+        </div>
+        <div class="field-error-msg">Selecione uma opção.</div>
+      </div>
+
+      <div class="field" data-field="comentario">
+        <label class="field-label" for="f-comentario">Caso tenha algo que queira compartilhar conosco, fique à vontade:</label>
+        <textarea id="f-comentario" rows="3"></textarea>
+      </div>
+
+      <button type="submit" class="btn" id="submit-btn">Enviar solicitação</button>
+    </form>
+  </div>
+
+  <!-- Tela de agradecimento -->
+  <div class="card screen" id="screen-thankyou">
+    <div class="thankyou-icon">🙏</div>
+    <h1 id="thankyou-title">Recebemos sua solicitação!</h1>
+    <p class="subtitle">
+      Obrigado por preencher o formulário com atenção e sinceridade. Nossa equipe vai analisar suas
+      respostas e, caso seu diagnóstico seja aprovado, entraremos em contato pelo WhatsApp ou e-mail
+      informado para agendar sua sessão com um de nossos especialistas.
+    </p>
+    <div class="notice">
+      ⚠️ Lembre-se: cancelamentos ou não comparecimento após o agendamento geram cobrança de
+      <strong>R$ 97,00</strong> para reagendamento.
+    </div>
+    <button class="btn secondary" onclick="restart()">Preencher novamente</button>
+  </div>
+
+  <footer class="hint">Formulário e pontuação de qualificação de leads — Diagnóstico Terapêutico.</footer>
+</div>
+
+<script>
+  // Substitua pelo endpoint gerado na sua conta do Formspree (https://formspree.io/f/SEU_ID)
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/xzdnkozg";
+  // Cole aqui a URL do seu Web App do Google Apps Script (termina em /exec). Deixe "" para não usar a planilha.
+  const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxMK-P3FDNLTTfIeYa6Tcs8rNJ7mtKxc_lRvjwcLuUou_YMuiMMk8eKYyczGN5AD-KTAA/exec";
+
+  const COURSES = [
+    "Radiestesia e Radiônica na Prática",
+    "Mesa Direcionadora de Pedidos",
+    "Mesa de Vidas Passadas",
+    "Protocolo das 7 Virtudes Divinas",
+    "Terapeuta Florais de Bach",
+    "Radiestesia Avançada com Pêndulo Hebreu",
+    "Cromoterapia na Radiestesia Avançada",
+    "Reiki Usui 2.0",
+    "Money Reiki",
+    "Tarot Radiônico",
+    "Astrologia Quântica com Pêndulo Hebreu",
+    "Café Sistêmico | Constelação Familiar na Água",
+    "Masterclass Orixás na Água",
+    "Masterclass Reconexão Familiar",
+    "Método Cura e Ascenção Estelar",
+    "Já participei de Tratamentos Coletivos",
+    'Até o momento "AINDA" não fiz nenhum curso da Quântica'
+  ];
+
+  const FATURAMENTO_OPTIONS = [
+    "Até o momento nunca consegui cobrar",
+    "De R$ 1,00 à R$ 500,00",
+    "De R$ 501,00 à R$ 1.000,00",
+    "De R$ 1.001,00 à R$ 5.000,00",
+    "De R$ 5.001,00 à R$ 10.000,00",
+    "Mais de R$ 10 Mil"
+  ];
+
+  const SCORE_MAP = {
+    fez_curso: { "Sim": 2, "Não": 0 },
+    tempo_acompanha: {
+      "Mais de 1 ano": 3,
+      "+ou- uns 6 meses": 2,
+      "+ou- uns 3 meses": 1,
+      "Acabei de conhecer agora": 0
+    },
+    como_se_ve: {
+      "Terapeuta de Si mesma (Não tenho renda nenhuma com atendimentos)": 0,
+      "Quero me capacitar para atender profissionalmente (Já tenho renda extra com atendimentos)": 2,
+      "Já trabalho de forma profissional como Terapeuta (Renda Principal)": 3
+    },
+    faturamento_vida: {
+      "Até o momento nunca consegui cobrar": 0,
+      "De R$ 1,00 à R$ 500,00": 1,
+      "De R$ 501,00 à R$ 1.000,00": 2,
+      "De R$ 1.001,00 à R$ 5.000,00": 3,
+      "De R$ 5.001,00 à R$ 10.000,00": 4,
+      "Mais de R$ 10 Mil": 5
+    },
+    faturamento_mensal: {
+      "Até o momento nunca consegui cobrar": 0,
+      "De R$ 1,00 à R$ 500,00": 1,
+      "De R$ 501,00 à R$ 1.000,00": 2,
+      "De R$ 1.001,00 à R$ 5.000,00": 3,
+      "De R$ 5.001,00 à R$ 10.000,00": 4,
+      "Mais de R$ 10 Mil": 5
+    },
+    renda_familiar: {
+      "Abaixo de 1 salário mínimo (R$ 1.518,00)": 0,
+      "Entre R$ 1.500 e R$ 3.000 reais": 1,
+      "Entre R$ 3.001 e R$ 5.000 reais": 2,
+      "Entre R$ 5.001 e 8.000 reais": 3,
+      "Acima de R$ 8.001 reais": 4
+    },
+    renda_desejada: {
+      "Entre R$ 3.001 e R$ 5.000 reais": 1,
+      "Entre R$ 5.001 e 8.000 reais": 2,
+      "Entre R$ 8.001 e R$ 10 Mil reais": 3,
+      "Acima de R$ 10 Mil reais": 4
+    },
+    situacao_profissional: {
+      "Tenho um emprego convencional, só faço atendimentos terapêuticos gratuitos, mas quero começar a cobrar": 1,
+      "Tenho um emprego convencional e faço atendimentos terapêuticos como renda extra": 2,
+      "Tenho um emprego convencional, mas quero fazer minha transição para trabalhar apenas como Terapeuta": 3,
+      "Estou aposentada(o), e só faço atendimentos terapêuticos gratuitos": 1,
+      "Estou aposentada(o), já faço atendimentos terapêuticos e quero me profissionalizar": 3,
+      "Já atuo 100% como Terapeuta, porém, quero me profissionalizar para aumentar meu faturamento": 4,
+      "Estou desempregada(o) e não tenho nenhuma fonte de renda": 2
+    },
+    ja_participou_mentoria: {
+      "Sim": 2,
+      "Não": 1,
+      "Até o momento não, mas entendo que me ajudaria bastante ✅": 3,
+      "Nunca pensei nisso, pois não tenho interesse de viver como Terapeuta 🚫": 0
+    },
+    participou_aula: { "Sim": 2, "Não": 0 }
+  };
+
+  const CATEGORY_FIELDS = {
+    engajamento: ["fez_curso", "tempo_acompanha", "ja_participou_mentoria", "participou_aula"],
+    financeiro: ["faturamento_vida", "faturamento_mensal", "renda_familiar", "renda_desejada"],
+    profissional: ["como_se_ve", "situacao_profissional"]
+  };
+
+  const REQUIRED_RADIO_FIELDS = [
+    "fez_curso", "tempo_acompanha", "como_se_ve", "faturamento_vida", "faturamento_mensal",
+    "renda_familiar", "renda_desejada", "situacao_profissional", "ja_participou_mentoria",
+    "participou_aula", "periodo"
+  ];
+
+  function buildDynamicOptions() {
+    const quaisGroup = document.getElementById("quais-cursos-group");
+    COURSES.forEach((course, i) => {
+      const label = document.createElement("label");
+      label.className = "choice";
+      label.innerHTML = `<input type="checkbox" name="quais_cursos" value="${course}"> ${course}`;
+      quaisGroup.appendChild(label);
+    });
+
+    ["faturamento_vida", "faturamento_mensal"].forEach(fieldName => {
+      const group = document.querySelector(`.choice-group[data-name="${fieldName}"]`);
+      FATURAMENTO_OPTIONS.forEach(opt => {
+        const label = document.createElement("label");
+        label.className = "choice";
+        label.innerHTML = `<input type="radio" name="${fieldName}" value="${opt}"> ${opt}`;
+        group.appendChild(label);
+      });
+    });
+  }
+
+  function goToForm() {
+    showScreen("screen-form");
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function getRadioValue(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : null;
+  }
+
+  function getCheckboxValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el => el.value);
+  }
+
+  function clearFieldError(fieldEl) {
+    fieldEl.classList.remove("field-error");
+  }
+
+  function setFieldError(fieldEl) {
+    fieldEl.classList.add("field-error");
+  }
+
+  function validateForm() {
+    let firstInvalid = null;
+
+    const textFields = [
+      { name: "nome", el: document.getElementById("f-nome") },
+      { name: "email", el: document.getElementById("f-email") }
+    ];
+
+    textFields.forEach(({ name, el }) => {
+      const fieldEl = document.querySelector(`.field[data-field="${name}"]`);
+      if (!el.value.trim()) {
+        setFieldError(fieldEl);
+        if (!firstInvalid) firstInvalid = fieldEl;
+      } else {
+        clearFieldError(fieldEl);
+      }
+    });
+
+    const whatsappEl = document.getElementById("f-whatsapp");
+    const whatsappFieldEl = document.querySelector('.field[data-field="whatsapp"]');
+    const whatsappDigits = whatsappEl.value.replace(/\D/g, "");
+    if (whatsappDigits.length < 10 || whatsappDigits.length > 11) {
+      setFieldError(whatsappFieldEl);
+      if (!firstInvalid) firstInvalid = whatsappFieldEl;
+    } else {
+      clearFieldError(whatsappFieldEl);
+    }
+
+    REQUIRED_RADIO_FIELDS.forEach(name => {
+      const fieldEl = document.querySelector(`.field[data-field="${name}"]`);
+      if (!getRadioValue(name)) {
+        setFieldError(fieldEl);
+        if (!firstInvalid) firstInvalid = fieldEl;
+      } else {
+        clearFieldError(fieldEl);
+      }
+    });
+
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    return !firstInvalid;
+  }
+
+  function computeCategoryScore(fields) {
+    let total = 0;
+    let max = 0;
+    fields.forEach(name => {
+      const map = SCORE_MAP[name];
+      max += Math.max(...Object.values(map));
+      const value = getRadioValue(name);
+      total += (value && map[value] !== undefined) ? map[value] : 0;
+    });
+    return { total, max, pct: Math.round((total / max) * 100) };
+  }
+
+  function classify(pct) {
+    if (pct >= 75) return "🔥 Lead Quente";
+    if (pct >= 50) return "🌤️ Lead Morno";
+    if (pct >= 25) return "🧊 Lead Frio";
+    return "🥶 Lead Congelado";
+  }
+
+  document.getElementById("lead-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const eng = computeCategoryScore(CATEGORY_FIELDS.engajamento);
+    const fin = computeCategoryScore(CATEGORY_FIELDS.financeiro);
+    const prof = computeCategoryScore(CATEGORY_FIELDS.profissional);
+
+    const totalPoints = eng.total + fin.total + prof.total;
+    const totalMax = eng.max + fin.max + prof.max;
+    const overallPct = Math.round((totalPoints / totalMax) * 100);
+    const label = classify(overallPct);
+
+    const nome = document.getElementById("f-nome").value.trim();
+    const email = document.getElementById("f-email").value.trim();
+    const whatsapp = document.getElementById("f-whatsapp").value.trim();
+    const periodo = getRadioValue("periodo");
+    const comentario = document.getElementById("f-comentario").value.trim();
+    const quaisCursos = getCheckboxValues("quais_cursos");
+
+    const payload = {
+      _subject: `Novo diagnóstico: ${nome} — ${label}`,
+      "Classificação": label,
+      "Pontuação geral (%)": overallPct,
+      "Engajamento (%)": eng.pct,
+      "Potencial financeiro (%)": fin.pct,
+      "Momento profissional (%)": prof.pct,
+      "Nome": nome,
+      "E-mail": email,
+      "WhatsApp": whatsapp,
+      "Melhor período para contato": periodo,
+      "Já fez curso Quântica Flow": getRadioValue("fez_curso"),
+      "Quais cursos já fez": quaisCursos.join(", ") || "—",
+      "Tempo acompanhando nas redes": getRadioValue("tempo_acompanha"),
+      "Como se vê como terapeuta": getRadioValue("como_se_ve"),
+      "Faturamento na vida": getRadioValue("faturamento_vida"),
+      "Faturamento mensal médio": getRadioValue("faturamento_mensal"),
+      "Renda mensal familiar": getRadioValue("renda_familiar"),
+      "Renda individual desejada": getRadioValue("renda_desejada"),
+      "Situação profissional atual": getRadioValue("situacao_profissional"),
+      "Já participou de mentoria": getRadioValue("ja_participou_mentoria"),
+      "Participou da aula dos 7 dias": getRadioValue("participou_aula"),
+      "Comentário livre": comentario || "—"
+    };
+
+    const submitBtn = document.getElementById("submit-btn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Enviando...";
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Falha no envio");
+
+      if (SHEETS_ENDPOINT) {
+        fetch(SHEETS_ENDPOINT, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
+
+      document.getElementById("thankyou-title").textContent = `Obrigado, ${nome}!`;
+      showScreen("screen-thankyou");
+    } catch (err) {
+      alert("Não foi possível enviar sua solicitação agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Enviar solicitação";
+    }
+  });
+
+  document.querySelector('.choice-group[data-name="fez_curso"]').addEventListener("change", function () {
+    const value = getRadioValue("fez_curso");
+    document.getElementById("field-quais-cursos").style.display = value === "Sim" ? "block" : "none";
+  });
+
+  function maskTelefoneBR(valor) {
+    valor = valor.replace(/\D/g, "").slice(0, 11);
+    valor = valor.replace(/^(\d{2})(\d)/, "($1) $2");
+    valor = valor.replace(/(\d)(\d{4})$/, "$1-$2");
+    return valor;
+  }
+
+  const whatsappInput = document.getElementById("f-whatsapp");
+  whatsappInput.addEventListener("input", function () {
+    whatsappInput.value = maskTelefoneBR(whatsappInput.value);
+  });
+
+  function restart() {
+    document.getElementById("lead-form").reset();
+    document.getElementById("field-quais-cursos").style.display = "none";
+    document.querySelectorAll(".field-error").forEach(el => el.classList.remove("field-error"));
+    showScreen("screen-start");
+  }
+
+  buildDynamicOptions();
+</script>
+</body>
+</html>
