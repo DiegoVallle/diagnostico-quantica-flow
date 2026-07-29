@@ -566,6 +566,57 @@
     return "🥶 Lead Congelado";
   }
 
+  // --- Fila de segurança: garante que nenhuma resposta se perca se a conexão falhar ---
+  // Antes de tentar enviar, o payload já fica salvo no localStorage. Só é removido de lá
+  // depois que o envio para a planilha é confirmado (sem erro de rede). Se o envio falhar,
+  // fica guardado e uma nova tentativa é feita automaticamente da próxima vez que a página
+  // for aberta nesse mesmo navegador.
+  function salvarPendente(payload) {
+    try {
+      const pendentes = JSON.parse(localStorage.getItem("leadsPendentes") || "[]");
+      pendentes.push(payload);
+      localStorage.setItem("leadsPendentes", JSON.stringify(pendentes));
+    } catch (err) {}
+  }
+
+  function removerPendente(payloadId) {
+    try {
+      const pendentes = JSON.parse(localStorage.getItem("leadsPendentes") || "[]");
+      const restantes = pendentes.filter(p => p._id !== payloadId);
+      localStorage.setItem("leadsPendentes", JSON.stringify(restantes));
+    } catch (err) {}
+  }
+
+  async function enviarParaSheets(payload, tentativas = 3) {
+    if (!SHEETS_ENDPOINT) return true;
+    for (let i = 0; i < tentativas; i++) {
+      try {
+        await fetch(SHEETS_ENDPOINT, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        return true;
+      } catch (err) {
+        if (i < tentativas - 1) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+      }
+    }
+    return false;
+  }
+
+  async function reenviarPendentes() {
+    let pendentes = [];
+    try {
+      pendentes = JSON.parse(localStorage.getItem("leadsPendentes") || "[]");
+    } catch (err) { return; }
+
+    for (const payload of pendentes) {
+      const ok = await enviarParaSheets(payload, 2);
+      if (ok) removerPendente(payload._id);
+    }
+  }
+
   document.getElementById("lead-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     if (!validateForm()) return;
@@ -587,6 +638,7 @@
     const quaisCursos = getCheckboxValues("quais_cursos");
 
     const payload = {
+      _id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
       _subject: `Novo diagnóstico: ${nome} — ${label}`,
       "Classificação": label,
       "Pontuação geral (%)": overallPct,
@@ -615,31 +667,35 @@
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando...";
 
-    try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
+    // Salva localmente ANTES de tentar enviar — se a conexão cair no meio do
+    // caminho, a resposta não se perde: fica pendente pra reenviar sozinha
+    // na próxima vez que essa pessoa abrir o link (ou se ela tentar de novo).
+    salvarPendente(payload);
+
+    const [formspreeResultado, sheetsOk] = await Promise.allSettled([
+      fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error("Falha no envio");
+      }).then(res => res.ok),
+      enviarParaSheets(payload)
+    ]);
 
-      if (SHEETS_ENDPOINT) {
-        fetch(SHEETS_ENDPOINT, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      }
+    const formspreeOk = formspreeResultado.status === "fulfilled" && formspreeResultado.value === true;
+    const planilhaOk = sheetsOk.status === "fulfilled" && sheetsOk.value === true;
 
-      document.getElementById("thankyou-title").textContent = `Obrigado, ${nome}!`;
-      showScreen("screen-thankyou");
-    } catch (err) {
+    if (planilhaOk) removerPendente(payload._id);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Enviar solicitação";
+
+    if (!formspreeOk && !planilhaOk) {
       alert("Não foi possível enviar sua solicitação agora. Verifique sua conexão e tente novamente.");
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Enviar solicitação";
+      return;
     }
+
+    document.getElementById("thankyou-title").textContent = `Obrigado, ${nome}!`;
+    showScreen("screen-thankyou");
   });
 
   document.querySelector('.choice-group[data-name="fez_curso"]').addEventListener("change", function () {
@@ -667,6 +723,7 @@
   }
 
   buildDynamicOptions();
+  reenviarPendentes();
 </script>
 </body>
 </html>
