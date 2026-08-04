@@ -360,7 +360,6 @@
       ⚠️ Lembre-se: cancelamentos ou não comparecimento após o agendamento geram cobrança de
       <strong>R$ 97,00</strong> para reagendamento.
     </div>
-    <button class="btn secondary" onclick="restart()">Preencher novamente</button>
   </div>
 
   <footer class="hint">Formulário e pontuação de qualificação de leads — Diagnóstico Terapêutico.</footer>
@@ -732,13 +731,6 @@
   whatsappInput.addEventListener("input", function () {
     whatsappInput.value = maskTelefoneBR(whatsappInput.value);
   });
-
-  function restart() {
-    document.getElementById("lead-form").reset();
-    document.getElementById("field-quais-cursos").style.display = "none";
-    document.querySelectorAll(".field-error").forEach(el => el.classList.remove("field-error"));
-    showScreen("screen-start");
-  }
 
   buildDynamicOptions();
   reenviarPendentes();
