@@ -1,0 +1,440 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17221d"><link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Diário de Hyrule"><title>Diário de Hyrule · Ocarina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&display=swap">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* Layout: cabeçalho fixo com placar + abas; cartões de área recolhíveis em coluna única (celular primeiro). */
+:root{
+  --bg:#eef1ea; --surface:#ffffff; --surface2:#e3e8dd; --line:#cdd5c6;
+  --fg:#1d2a22; --muted:#5d6b61;
+  --gold:#a8790f; --gold-soft:#f3e3b4; --green:#2f7a4b; --green-soft:#d6ebdc;
+  --night:#3e4f8a; --child:#2f7a4b; --adult:#8a4b2f;
+  --display:"Marcellus SC", "Trajan Pro", Georgia, serif;
+  --body:"Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1714; --surface:#17221d; --surface2:#1f2d26; --line:#2c3d34;
+  --fg:#e7eee8; --muted:#9db0a3;
+  --gold:#e3b84a; --gold-soft:#3a3016; --green:#6fcf8f; --green-soft:#1d3a28;
+  --night:#9aaaf0; --child:#6fcf8f; --adult:#e6a27f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --surface:#17221d; --surface2:#1f2d26; --line:#2c3d34;
+  --fg:#e7eee8; --muted:#9db0a3;
+  --gold:#e3b84a; --gold-soft:#3a3016; --green:#6fcf8f; --green-soft:#1d3a28;
+  --night:#9aaaf0; --child:#6fcf8f; --adult:#e6a27f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface)}
+nav.tabbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+nav.tabbar .wrap{padding-block:6px}
+header.top .wrap{padding-block:10px 8px;display:grid;gap:8px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+.brand h1{font-family:var(--display);font-weight:400;font-size:1.25rem;margin:0;letter-spacing:.02em;line-height:1.1}
+.brand small{display:block;color:var(--muted);font-size:.75rem;letter-spacing:.04em}
+.brand .pct{margin-left:auto;text-align:right;font-family:var(--display);font-size:1.4rem;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1}
+.brand .pct small{font-family:var(--body)}
+.score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chip-score{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:10px;padding:5px 7px;min-width:0;border:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.chip-score[aria-pressed="true"]{outline:2px solid var(--gold)}
+.chip-score svg{flex:none}
+.chip-score b{font-variant-numeric:tabular-nums;font-size:.85rem;display:block;line-height:1.1}
+.chip-score span{font-size:.65rem;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs button{flex:1 0 auto;border:0;background:transparent;color:var(--muted);font:600 .85rem var(--body);padding:7px 10px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+main .wrap{padding-block:14px 60px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+#list{display:grid;gap:10px;min-width:0}
+.addrow select{max-width:38%}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toggle{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 10px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--gold);margin:0}
+.filterlabel{font-size:.75rem;color:var(--muted)}
+.note{font-size:.8rem;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:10px 12px}
+.note b{color:var(--fg)}
+.grouptitle{font-family:var(--display);font-size:1rem;letter-spacing:.06em;color:var(--muted);margin:10px 2px 0;display:flex;gap:8px;align-items:center}
+.grouptitle::after{content:"";flex:1;height:1px;background:var(--line)}
+.area{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.area.done{border-color:var(--gold)}
+.ahead{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;width:100%;padding:10px 12px 10px 10px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.art{width:64px;height:48px;border-radius:9px;overflow:hidden;display:block}
+.ahead h2{font-family:var(--display);font-weight:400;font-size:1.05rem;margin:0;line-height:1.15;text-wrap:balance}
+.counts{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:3px;font-size:.72rem;color:var(--muted)}
+.counts span{display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums}
+.counts span.ok{color:var(--green);font-weight:700}
+.prog{display:grid;justify-items:end;gap:4px;font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:800}
+.bar{width:54px;height:6px;border-radius:9px;background:var(--surface2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:9px;transition:width .25s}
+.chev{transition:transform .2s;color:var(--muted)}
+.area.open .chev{transform:rotate(180deg)}
+.abody{border-top:1px solid var(--line);padding:4px 0 8px}
+.item{display:grid;grid-template-columns:auto 26px 1fr auto;gap:10px;align-items:center;padding:8px 12px;cursor:pointer;min-height:44px}
+.item:hover{background:var(--surface2)}
+.item input{width:22px;height:22px;accent-color:var(--gold);margin:0;cursor:pointer}
+.item .lbl{min-width:0}
+.item .lbl b{font-weight:600;font-size:.92rem;display:block}
+.item .lbl em{font-style:normal;color:var(--muted);font-size:.78rem;display:block}
+.item.checked .lbl b{text-decoration:line-through;text-decoration-color:var(--gold);color:var(--muted)}
+.tags{display:flex;gap:4px}
+.tag{font-size:.65rem;font-weight:800;letter-spacing:.04em;border-radius:6px;padding:2px 5px;border:1px solid currentColor;line-height:1.2}
+.tag.c{color:var(--child)} .tag.a{color:var(--adult)} .tag.n{color:var(--night)} .tag.new{color:var(--gold)}
+.del{border:0;background:transparent;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px}
+.addrow{display:flex;gap:6px;padding:6px 12px 2px}
+.addrow input,.addrow select{font:inherit;font-size:.85rem;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0}
+.addrow input{flex:1}
+.addrow button,.btn{font:700 .8rem var(--body);border:0;border-radius:8px;padding:7px 12px;background:var(--fg);color:var(--bg);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn.danger{background:#b3402f;color:#fff}
+.empty{padding:10px 12px;color:var(--muted);font-size:.85rem}
+.sub{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 12px 2px;font-weight:800}
+.foot{display:grid;gap:10px;font-size:.8rem;color:var(--muted)}
+.foot .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sync{font-size:.72rem;color:var(--muted)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (max-width:420px){.score{grid-template-columns:repeat(4,minmax(0,1fr))}.chip-score{flex-direction:column;align-items:flex-start;gap:2px}.chip-score svg{width:16px;height:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.syncbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:8px}
+.syncbox h3{margin:0;font-family:var(--display);font-weight:400;font-size:1rem}
+.syncbox p{margin:0;font-size:.8rem;color:var(--muted)}
+.syncbox form{display:flex;gap:6px}
+.syncbox input{flex:1;min-width:0;font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.syncbox .err{color:#c0392b}
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-gs" viewBox="0 0 24 24"><g fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M8 10 3 6M8 13H2M8 16l-5 4M16 10l5-4M16 13h6M16 16l5 4"/></g><ellipse cx="12" cy="13" rx="5" ry="6" fill="var(--gold)"/><circle cx="12" cy="7" r="3" fill="var(--gold)"/><path d="M10 12h4M10 15h4" stroke="var(--surface)" stroke-width="1.2"/></symbol>
+    <symbol id="i-hp" viewBox="0 0 24 24"><path d="M12 21 3.5 12.6A5 5 0 0 1 12 6.2V21Z" fill="#d6455d"/><path d="M12 21l8.5-8.4A5 5 0 0 0 12 6.2V21Z" fill="none" stroke="#d6455d" stroke-width="1.4" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-hc" viewBox="0 0 24 24"><path d="M12 21 3.5 12.6A5 5 0 0 1 12 6.2a5 5 0 0 1 8.5 6.4Z" fill="#d6455d"/><path d="M7 9.5a2.4 2.4 0 0 1 2.4-1.6" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-bean" viewBox="0 0 24 24"><path d="M12 21v-8" stroke="var(--green)" stroke-width="2" stroke-linecap="round"/><path d="M12 14c-4 0-6-3-6-6 3 0 6 2 6 6Zm0-2c0-4 3-6 6-6 0 3-2 6-6 6Z" fill="var(--green)"/><ellipse cx="12" cy="21" rx="6" ry="1.6" fill="#8a5a2b"/></symbol>
+    <symbol id="i-fairy" viewBox="0 0 24 24"><ellipse cx="7.5" cy="9" rx="5" ry="3.2" transform="rotate(-25 7.5 9)" fill="#e58ac0" opacity=".75"/><ellipse cx="16.5" cy="9" rx="5" ry="3.2" transform="rotate(25 16.5 9)" fill="#e58ac0" opacity=".75"/><circle cx="12" cy="12" r="3.4" fill="#f6c8e2"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></symbol>
+    <symbol id="i-poe" viewBox="0 0 24 24"><path d="M6 20c0-8 1-14 6-14s6 6 6 14l-2-2-2 2-2-2-2 2-2-2Z" fill="#6d5fd3" opacity=".85"/><circle cx="10" cy="11" r="1.3" fill="#ffe36b"/><circle cx="14" cy="11" r="1.3" fill="#ffe36b"/><path d="M18 9h3v5h-3z" fill="#e3b84a"/></symbol>
+    <symbol id="i-bottle" viewBox="0 0 24 24"><path d="M10 3h4v4l3 3v10a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20V10l3-3Z" fill="none" stroke="#5aa3c9" stroke-width="1.6"/><path d="M8 14h8v6H8z" fill="#5aa3c9" opacity=".55"/><path d="M9.5 3h5" stroke="#8a5a2b" stroke-width="2"/></symbol>
+    <symbol id="i-mask" viewBox="0 0 24 24"><path d="M3 7c3-2 15-2 18 0 0 7-3 12-9 12S3 14 3 7Z" fill="#e0a43a"/><ellipse cx="8.5" cy="10.5" rx="2" ry="1.4" fill="var(--surface)"/><ellipse cx="15.5" cy="10.5" rx="2" ry="1.4" fill="var(--surface)"/><path d="M9 15c2 1.5 4 1.5 6 0" stroke="var(--surface)" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-trade" viewBox="0 0 24 24"><path d="M5 8h12l-3-3M19 16H7l3 3" fill="none" stroke="#c97b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-song" viewBox="0 0 24 24"><path d="M9 17V5l10-2v12" fill="none" stroke="#4f8fd6" stroke-width="2"/><circle cx="7" cy="17" r="2.6" fill="#4f8fd6"/><circle cx="17" cy="15" r="2.6" fill="#4f8fd6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 2l7 7h-4v8H9V9H5Z" fill="#3aa58a"/><path d="M8 20h8" stroke="#3aa58a" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-boss" viewBox="0 0 24 24"><path d="M12 2l3 6H9Zm-4.5 8L4.5 16h6Zm9 0-3 6h6Z" fill="var(--gold)"/><path d="M4 20h16" stroke="var(--gold)" stroke-width="1.6"/></symbol>
+    <symbol id="i-misc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--muted)" stroke-width="1.8"/><path d="M12 8v5M12 16v.5" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-tri" viewBox="0 0 40 36"><path d="M20 1 29.5 18h-19Z M10.5 18 20 35H1Z M29.5 18 39 35H20Z" fill="var(--gold)"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="34" height="31" aria-hidden="true"><use href="#i-tri"/></svg>
+      <div><h1>Diário de Hyrule</h1><small>Ocarina of Time Remake · checklist 100%</small></div>
+      <div class="pct"><span id="pctTotal">0%</span><small id="pctCount">0/0</small></div>
+    </div>
+    <div class="score" id="score"></div>
+  </div>
+</header>
+<nav class="tabbar">
+  <div class="wrap">
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="mundo" aria-selected="true">Mundo</button>
+      <button role="tab" data-tab="masmorras" aria-selected="false">Masmorras</button>
+      <button role="tab" data-tab="colecoes" aria-selected="false">Máscaras · Trocas · Canções</button>
+    </div>
+  </div>
+</nav>
+
+<main><div class="wrap" id="main">
+  <div class="tools">
+    <label class="toggle"><input type="checkbox" id="optHints" checked> Mostrar pistas</label>
+    <label class="toggle"><input type="checkbox" id="optHide"> Esconder concluídos</label>
+    <span class="filterlabel" id="filterInfo"></span>
+  </div>
+  <div id="list"></div>
+  <div class="foot">
+    <div class="note">Feito a partir do jogo original com as mudanças já conhecidas do Remake (Switch 2). Se alguma coisa estiver diferente no seu jogo, abra a área e use <b>+ adicionar</b> para incluir o que faltar, ou o <b>×</b> nos itens que você mesmo criou. As pistas são curtas de propósito: dá para desligar em <b>Mostrar pistas</b>.</div>
+    <div class="row">
+      <button class="btn ghost" id="expandAll">Abrir todas</button>
+      <button class="btn ghost" id="collapseAll">Fechar todas</button>
+      <button class="btn ghost" id="resetBtn">Zerar progresso</button>
+      <span id="resetConfirm" hidden><button class="btn danger" id="resetYes">Sim, zerar tudo</button> <button class="btn ghost" id="resetNo">Cancelar</button></span>
+    </div>
+    <div class="sync" id="sync">Progresso salvo neste aparelho.</div>
+  </div>
+</div></main>
+
+<script>
+/* ---------- Dados ----------
+ t: gs skulltula · hp pedaço de coração · hc coração do chefe · bean feijão · fairy grande fada
+    poe grande poe · bottle garrafa · up melhoria · misc outros
+ a: c criança · a adulto · n noite · new novo no Remake
+*/
+const BIOME = {
+ forest:["#2f6b3a","#1d4a28","#7fbf6a"], meadow:["#3c7d4a","#24502f","#a8d58a"], field:["#6aa84f","#3f7a33","#e8d27a"],
+ town:["#8b6f4e","#5a4632","#e8c98a"], castle:["#6c7a96","#3c4660","#c9d3e8"], ranch:["#9a7b3f","#5f4a22","#e7d39a"],
+ village:["#8a5a3c","#5a3824","#f0b27a"], grave:["#4a4a6a","#262640","#a7a7d6"], mountain:["#8a5a46","#4c2f24","#f0a070"],
+ goron:["#9a5a2a","#5a3016","#ffb35c"], fire:["#b0402a","#5a1a10","#ffcf5a"], river:["#3f8fb0","#235a73","#bfe7f5"],
+ zora:["#2f7fb8","#164a73","#9fe0ff"], ice:["#7fb6d6","#3f6f8f","#eaf7ff"], lake:["#2f8fa0","#165663","#ffd27a"],
+ canyon:["#b8743a","#6b3e1c","#ffd99a"], fortress:["#b8863a","#6b4a1c","#ffe4a3"], desert:["#d1a35a","#8a6430","#fff0c8"],
+ deku:["#4f7a2f","#2a4416","#c7e07a"], cave:["#7a5a3c","#3c2a1a","#e0a050"], jabu:["#a85a7a","#5a2a40","#f5b8d0"],
+ shadow:["#3a2f4a","#16101f","#9a7ad6"], spirit:["#b07a3a","#5a3a16","#ffd480"], water:["#2f6fa8","#163a63","#7fd0ff"],
+ ganon:["#4a2a3a","#1a0f16","#e05a5a"], well:["#3c3a4a","#1a1820","#8a86a6"]
+};
+function art(b){
+ const [a,d,l]=BIOME[b]||BIOME.field;
+ const motif={
+  forest:`<path d="M6 48 16 18 26 48Z M22 48 34 10 46 48Z M42 48 52 22 62 48Z" fill="${d}"/>`,
+  meadow:`<path d="M0 40q16-8 32 0t32 0V48H0Z" fill="${d}"/><path d="M20 40v-14h24v14" fill="none" stroke="${l}" stroke-width="2"/>`,
+  field:`<path d="M0 34q20-10 40 0t24-4V48H0Z" fill="${d}"/><circle cx="50" cy="12" r="6" fill="${l}"/>`,
+  town:`<path d="M4 48V28l8-8 8 8v20M24 48V22l9-9 9 9v26M46 48V30l7-7 7 7v18" fill="${d}"/>`,
+  castle:`<path d="M10 48V22h6v-6h4v6h24v-6h4v6h6v26Z" fill="${d}"/><path d="M28 48V34h8v14" fill="${l}"/>`,
+  ranch:`<path d="M0 40h64v8H0Z" fill="${d}"/><path d="M6 40V32M18 40V32M30 40V32M42 40V32M54 40V32M0 35h64" stroke="${l}" stroke-width="2"/><path d="M38 30V18l8-6 8 6v12" fill="${d}"/>`,
+  village:`<path d="M6 48V30l10-8 10 8v18Z" fill="${d}"/><path d="M40 48V14h6v34" fill="${d}"/><path d="M43 14 37 6M43 14l6-8M43 14 35 14M43 14h8" stroke="${l}" stroke-width="2"/>`,
+  grave:`<path d="M10 48V30a6 6 0 0 1 12 0v18M28 48V26a7 7 0 0 1 14 0v22M46 48V32a5 5 0 0 1 10 0v16" fill="${d}"/><circle cx="52" cy="10" r="5" fill="${l}"/>`,
+  mountain:`<path d="M0 48 24 10 36 26 44 16 64 48Z" fill="${d}"/><path d="M24 10 19 18h10Z" fill="${l}"/><path d="M40 8q4-4 8 0" stroke="${l}" stroke-width="2" fill="none"/>`,
+  goron:`<path d="M0 48 20 18h24l20 30Z" fill="${d}"/><circle cx="32" cy="34" r="7" fill="${l}"/>`,
+  fire:`<path d="M8 48 26 14h12l18 34Z" fill="${d}"/><path d="M30 14q-4-8 2-12 6 4 2 12" fill="${l}"/>`,
+  river:`<path d="M0 24q16 6 32 0t32 0v8q-16 6-32 0T0 32Z" fill="${l}" opacity=".7"/><path d="M0 40h64v8H0Z" fill="${d}"/>`,
+  zora:`<path d="M20 0h24v48H20Z" fill="${l}" opacity=".5"/><path d="M0 40q16-6 32 0t32 0v8H0Z" fill="${d}"/>`,
+  ice:`<path d="M8 48 18 22 26 48M28 48 38 12 48 48M46 48 54 28 62 48" fill="${l}"/>`,
+  lake:`<path d="M0 34h64v14H0Z" fill="${d}"/><path d="M40 34V20h10v14" fill="${l}"/><path d="M4 30q4-3 8 0M14 30q4-3 8 0" stroke="${l}" stroke-width="1.5" fill="none"/>`,
+  canyon:`<path d="M0 48V16l14 4v28M64 48V12l-16 6v30" fill="${d}"/><path d="M14 30h34" stroke="${l}" stroke-width="2"/>`,
+  fortress:`<path d="M6 48V24h16v-8h20v8h16v24Z" fill="${d}"/><path d="M14 32h4M30 24h4M46 32h4" stroke="${l}" stroke-width="3"/>`,
+  desert:`<path d="M0 40q16-12 32-2t32-4v14H0Z" fill="${d}"/><circle cx="16" cy="14" r="7" fill="${l}"/>`,
+  deku:`<path d="M22 48V20q10-16 20 0v28Z" fill="${d}"/><circle cx="28" cy="30" r="2.5" fill="${l}"/><circle cx="36" cy="30" r="2.5" fill="${l}"/><path d="M8 18q24-20 48 0" fill="${d}"/>`,
+  cave:`<path d="M0 48V20q32-24 64 0v28Z" fill="${d}"/><path d="M22 48q10-20 20 0" fill="${a}"/><circle cx="32" cy="22" r="3" fill="${l}"/>`,
+  jabu:`<ellipse cx="32" cy="30" rx="26" ry="16" fill="${d}"/><circle cx="20" cy="26" r="3" fill="${l}"/><path d="M0 44h64v4H0Z" fill="${l}" opacity=".6"/>`,
+  shadow:`<path d="M16 48V18h32v30" fill="${d}"/><ellipse cx="32" cy="30" rx="8" ry="5" fill="${l}"/><circle cx="32" cy="30" r="2.5" fill="${d}"/>`,
+  spirit:`<path d="M14 48V20q18-14 36 0v28Z" fill="${d}"/><circle cx="32" cy="22" r="5" fill="${l}"/>`,
+  water:`<path d="M10 48V22l22-12 22 12v26Z" fill="${d}"/><path d="M0 40q16-5 32 0t32 0v8H0Z" fill="${l}" opacity=".6"/>`,
+  ganon:`<path d="M8 48V20l8-6v-6M56 48V20l-8-6v-6M20 48V12h24v36" fill="${d}" stroke="${d}"/><path d="M28 30h8" stroke="${l}" stroke-width="3"/>`,
+  well:`<ellipse cx="32" cy="38" rx="20" ry="6" fill="${d}"/><path d="M14 38V26h36v12" fill="${d}"/><path d="M18 26V10h28v16M14 10h36" stroke="${l}" stroke-width="2" fill="none"/>`
+ }[b]||"";
+ return `<svg class="art" viewBox="0 0 64 48" aria-hidden="true"><defs><linearGradient id="g${b}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${d}"/></linearGradient></defs><rect width="64" height="48" fill="url(#g${b})"/><rect width="64" height="48" fill="${a}" opacity=".35"/>${motif}</svg>`;
+}
+
+const A=(id,name,biome,items)=>({id,name,biome,items});
+const I=(t,l,h="",a="")=>({t,l,h,a});
+const GS=(h,a)=>I("gs","Gold Skulltula",h,a), HP=(h,a)=>I("hp","Pedaço de coração",h,a);
+
+const WORLD=[
+ {g:"Floresta",areas:[
+  A("kf","Floresta Kokiri","forest",[GS("Atrás de uma casa","c n"),GS("Solo fofo (use um inseto)","c"),GS("Parede de uma casa","a n"),I("bean","Plantar feijão","Solo fofo da vila","c")]),
+  A("lw","Bosque Perdido","forest",[GS("Solo perto da ponte","c"),GS("Solo perto do palco","c"),GS("No alto, perto do palco","a n"),HP("Música com um amigo de máscara","c"),HP("Jogo de memória da ocarina","c"),I("bean","Plantar feijão","Perto da ponte","c"),I("bean","Plantar feijão","Perto do palco","c"),I("up","Melhoria de nozes/varetas","Deku Scrubs","c"),I("up","Bolsa maior de sementes","Tiro ao alvo","c")]),
+  A("sfm","Prado da Floresta Sagrada","meadow",[GS("Parede do labirinto","a n")])
+ ]},
+ {g:"Hyrule",areas:[
+  A("hf","Campo de Hyrule","field",[GS("Dentro de uma gruta (perto de Kakariko)",""),GS("Dentro de uma gruta escondida",""),HP("Business Scrub perto do fosso do castelo","new"),HP("Baú sob a parede vermelha do cânion","new"),
+   ...Array.from({length:10},(_,i)=>I("poe",`Grande Poe ${i+1}`,"Procure a cavalo","a"))]),
+  A("mk","Mercado / Cidadela","town",[GS("Casa do guarda","c"),HP("Jogo do baú do tesouro","c n"),HP("Boliche Bombchu","c"),HP("Cachorrinho perdido","c n"),I("bottle","Garrafa","Entregar os Grandes Poes","a"),I("up","Bolsa de bombas maior","Boliche Bombchu","c"),I("up","Bolsa de sementes maior","Galeria de tiro","c")]),
+  A("hc","Castelo de Hyrule","castle",[GS("Árvore","c"),GS("Gruta perto da árvore","c"),I("fairy","Grande Fada","Atrás de pedras","c")]),
+  A("ogc","Fora do Castelo de Ganon","ganon",[GS("Pilar de pedra","a"),I("fairy","Grande Fada","Precisa de força","a")]),
+  A("llr","Fazenda Lon Lon","ranch",[GS("Árvore","c"),GS("Abrigo","c n"),GS("Janela da casa","c n"),GS("Muro dos fundos","c n"),HP("Celeiro/silo","c"),I("bottle","Garrafa","Jogo dos cucos","c"),I("misc","Epona","Corrida na fazenda","a")])
+ ]},
+ {g:"Kakariko",areas:[
+  A("kak","Vila Kakariko","village",[GS("Casa em construção","c n"),GS("Casa das Skulltulas","c n"),GS("Casa do guarda","c n"),GS("Árvore","c n"),GS("Torre de vigia","c n"),GS("Acima de uma casa","a n"),
+   HP("Casa com a vaca","c"),HP("Moinho","a"),HP("Homem no telhado",""),HP("Recompensa: 50 Skulltulas",""),
+   I("bottle","Garrafa","Moça dos cucos","c"),I("up","Aljava maior","Galeria de tiro","a"),
+   I("up","Recompensa: 10 Skulltulas",""),I("up","Recompensa: 20 Skulltulas","Item novo no Remake","new"),I("up","Recompensa: 30 Skulltulas",""),I("up","Recompensa: 40 Skulltulas",""),I("up","Recompensa: 100 Skulltulas","")]),
+  A("gy","Cemitério","grave",[GS("Parede","c n"),GS("Solo fofo","c"),HP("Passeio de escavação","c n"),HP("Dentro de um túmulo","new"),HP("No alto, perto dos túmulos",""),HP("Corrida","a"),I("bean","Plantar feijão","Solo fofo","c")])
+ ]},
+ {g:"Montanha da Morte",areas:[
+  A("dmt","Trilha da Montanha da Morte","mountain",[GS("Solo fofo","c"),GS("Parede explosiva perto de Kakariko","c"),GS("Acima da entrada da caverna","a n"),GS("Caminho das pedras que caem","a n"),HP("Parede explosiva",""),I("bean","Plantar feijão","Perto da caverna","c"),I("fairy","Grande Fada","No topo","")]),
+  A("gc","Cidade Goron","goron",[GS("Plataforma central","a"),GS("Labirinto de pedras","c"),HP("Pote giratório",""),I("up","Bolsa de bombas maior","Goron rolante","c")]),
+  A("dmc","Cratera da Montanha da Morte","fire",[GS("Caixote","c"),GS("Solo fofo","c"),HP("Parede perto da entrada",""),HP("Topo do vulcão",""),HP("Business Scrub perto da rede","c new"),I("bean","Plantar feijão","Solo fofo","c"),I("fairy","Grande Fada","Parede explosiva","")])
+ ]},
+ {g:"Zora",areas:[
+  A("zr","Rio Zora","river",[GS("Árvore","c"),GS("Escada","c n"),GS("Perto das grutas altas","a n"),GS("Acima da ponte","a n"),HP("Plataforma perto da gruta","c"),HP("Plataforma perto da cachoeira","c"),HP("Sapos (chuva)","c"),HP("Sapos (jogo)","c"),I("bean","Plantar feijão","Perto da entrada","c"),I("misc","Comprar feijões","Vendedor de feijões","c")]),
+  A("zd","Domínio Zora","zora",[GS("Cascata congelada","a n"),HP("Tochas","c"),I("up","Escama de prata","Jogo de mergulho","c")]),
+  A("zf","Fonte Zora","zora",[GS("Árvore","c"),GS("Acima do tronco","a n"),GS("Caverna escondida","a"),HP("Iceberg","a"),HP("No fundo","a"),I("fairy","Grande Fada","Pedra explosiva","")])
+ ]},
+ {g:"Lago",areas:[
+  A("lh","Lago Hylia","lake",[GS("Solo fofo","c"),GS("Parede do laboratório","c n"),GS("Ilha pequena","c n"),GS("Caixote no laboratório","a"),GS("Árvore","a n"),HP("Pesca","c"),HP("Mergulho no laboratório",""),HP("Topo do laboratório","a"),I("bean","Plantar feijão","Perto do laboratório","c"),I("up","Escama de ouro","Pesca","a")])
+ ]},
+ {g:"Gerudo",areas:[
+  A("gv","Vale Gerudo","canyon",[GS("Pequena ponte","c n"),GS("Solo fofo","c"),GS("Atrás da tenda","a n"),GS("Pilar","a n"),HP("Plataforma da cachoeira","c"),HP("Caixote no rio","c"),I("bean","Plantar feijão","Solo fofo","c")]),
+  A("gf","Fortaleza Gerudo","fortress",[GS("Campo de arco","a n"),GS("Último andar","a n"),HP("Arco e flecha a cavalo (1000)","a"),HP("Baú no telhado","a"),I("up","Aljava maior","Arco a cavalo (1500)","a")]),
+  A("hw","Deserto Assombrado","desert",[GS("Construção no deserto","a")]),
+  A("dc","Colosso do Deserto","desert",[GS("Solo fofo","c"),GS("Colina","a n"),GS("Árvore","a n"),HP("Plataforma alta","a"),I("bean","Plantar feijão","Solo fofo","c"),I("fairy","Grande Fada","Parede explosiva","")])
+ ]}
+];
+
+const DUNGEONS=[
+ {g:"Criança",areas:[
+  A("d-deku","Árvore Deku","deku",[GS("Sala da bússola",""),GS("Porão (grade)",""),GS("Porão (vinhas)",""),GS("Sala dos fundos",""),I("hc","Coração do chefe","")]),
+  A("d-dodongo","Caverna dos Dodongos","cave",[GS("Sala lateral",""),GS("Espantalho",""),GS("Nicho acima da escada",""),GS("Vinhas da escada",""),GS("Sala dos fundos",""),I("hc","Coração do chefe","")]),
+  A("d-jabu","Barriga de Jabu-Jabu","jabu",[GS("Sala do interruptor de água",""),GS("Porão (embaixo)",""),GS("Porão (em cima)",""),GS("Perto do chefe",""),I("bottle","Garrafa","Um pedido especial",""),I("hc","Coração do chefe","")])
+ ]},
+ {g:"Adulto",areas:[
+  A("d-forest","Templo da Floresta","forest",[GS("Primeira sala",""),GS("Saguão",""),GS("Pátio leste",""),GS("Pátio oeste",""),GS("Porão",""),I("hc","Coração do chefe","")]),
+  A("d-fire","Templo do Fogo","fire",[GS("Sala da cela",""),GS("Pilar do canto",""),GS("Labirinto",""),GS("Espantalho (alto)",""),GS("Sala do martelo",""),I("hc","Coração do chefe","")]),
+  A("d-water","Templo da Água","water",[GS("Sala da cachoeira",""),GS("Rio",""),GS("Parte baixa",""),GS("Plataforma central",""),GS("Perto do chefe",""),I("hc","Coração do chefe","")]),
+  A("d-well","Fundo do Poço","well",[GS("Jaula",""),GS("Sala interna leste",""),GS("Sala interna oeste","")]),
+  A("d-ice","Caverna de Gelo","ice",[GS("Sala das lâminas",""),GS("Sala circular",""),GS("Sala do bloco","")]),
+  A("d-shadow","Templo das Sombras","shadow",[GS("Sala das foices",""),GS("Sala invisível",""),GS("Barco",""),GS("Lâminas giratórias",""),GS("Perto do chefe",""),I("hc","Coração do chefe","")]),
+  A("d-spirit","Templo do Espírito","spirit",[GS("Lado da criança (grade)",""),GS("Sala do sol",""),GS("Lado do adulto",""),GS("Sala da estátua",""),GS("Sala das pedras",""),I("hc","Coração do chefe","")]),
+  A("d-ganon","Castelo de Ganon","ganon",[I("misc","Campo de Treinamento Gerudo","Concluído",""),I("misc","Castelo de Ganon","Concluído","")])
+ ]}
+];
+
+const COLLECTIONS=[
+ {g:"Máscaras",areas:[
+  A("masks","Loja de Máscaras","town",[["Máscara Keaton"],["Máscara de Caveira"],["Máscara Assustadora"],["Capuz de Coelho"],["Máscara Goron"],["Máscara Zora"],["Máscara Gerudo"],["Máscara da Verdade"]].map(([l])=>I("mask",l,"","c")))
+ ]},
+ {g:"Sequências de troca",areas:[
+  A("trade-c","Troca da criança","castle",["Ovo Estranho","Cuco","Carta da Zelda"].map(l=>I("trade",l,"","c"))),
+  A("trade-a","Troca do adulto","mountain",["Ovo de Bolso","Cuco de Bolso","Cojiro","Cogumelo Estranho","Poção Estranha","Serra do Caçador","Espada Goron Quebrada","Receita","Sapo Olhudo","Colírio","Comprovante","Espada do Biggoron"].map(l=>I("trade",l,"","a")))
+ ]},
+ {g:"Canções",areas:[
+  A("songs","Canções da Ocarina","meadow",["Canção de Zelda","Canção de Epona","Canção de Saria","Canção do Sol","Canção da Tempestade","Canção do Tempo"].map(l=>I("song",l))),
+  A("warps","Canções de teletransporte","spirit",["Minueto da Floresta","Bolero do Fogo","Serenata da Água","Noturno da Sombra","Réquiem do Espírito","Prelúdio da Luz"].map(l=>I("song",l)))
+ ]}
+];
+
+const TABS={mundo:WORLD,masmorras:DUNGEONS,colecoes:COLLECTIONS};
+const TYPES={gs:"Skulltulas",hp:"Corações",bean:"Feijões",fairy:"Grandes Fadas",poe:"Grandes Poes",bottle:"Garrafas",mask:"Máscaras",trade:"Trocas",song:"Canções",hc:"Chefes",up:"Melhorias",misc:"Outros"};
+const SCORE=[["gs","Skulltulas"],["hp","Corações"],["mask","Máscaras"],["trade","Trocas"],["bean","Feijões"],["fairy","Fadas"],["poe","Poes"],["bottle","Garrafas"]];
+
+// ids estáveis: área + tipo + ordem dentro do tipo
+for(const tab of Object.values(TABS))for(const grp of tab)for(const ar of grp.areas){const n={};for(const it of ar.items){n[it.t]=(n[it.t]||0)+1;it.id=`${ar.id}.${it.t}${n[it.t]}`}}
+
+/* ---------- Estado ---------- */
+const LS="zelda-oot-remake-v1";
+let state={c:{},x:{},open:{},tab:"mundo",hints:true,hide:false,filter:null,u:0};
+try{const s=JSON.parse(localStorage.getItem(LS)||"null");if(s)state={...state,...s}}catch(e){}
+let docRef=null,saveT=null;
+function save(remote=true){
+ state.u=Date.now();
+ try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}
+ if(remote&&docRef&&code){clearTimeout(saveT);saveT=setTimeout(()=>{docRef.set({c:state.c,x:state.x,u:state.u}).then(()=>syncMsg("Salvo na nuvem ✓")).catch(()=>syncMsg("Salvo neste aparelho (sem conexão agora; tento de novo depois)."))},700)}
+}
+function syncMsg(t){document.getElementById("sync").textContent=t}
+
+function allItems(){const out=[];for(const tab of Object.values(TABS))for(const g of tab)for(const ar of g.areas)out.push(...itemsOf(ar));return out}
+function itemsOf(ar){return ar.items.concat((state.x[ar.id]||[]).map(x=>({...x,custom:true})))}
+
+/* ---------- Render ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const icon=(t,s=22)=>`<svg width="${s}" height="${s}" aria-hidden="true"><use href="#i-${t}"/></svg>`;
+function tagsHTML(a){if(!a)return"";return `<span class="tags">${a.split(" ").map(k=>({c:'<span class="tag c">CRIANÇA</span>',a:'<span class="tag a">ADULTO</span>',n:'<span class="tag n">NOITE</span>',new:'<span class="tag new">REMAKE</span>'}[k]||"")).join("")}</span>`}
+
+function renderScore(){
+ const all=allItems();
+ const done=all.filter(i=>state.c[i.id]).length;
+ $("#pctTotal").textContent=Math.floor(all.length?done/all.length*100:0)+"%";
+ $("#pctCount").textContent=`${done}/${all.length}`;
+ $("#score").innerHTML=SCORE.map(([t,l])=>{const xs=all.filter(i=>i.t===t);const d=xs.filter(i=>state.c[i.id]).length;
+  return `<button class="chip-score" data-f="${t}" aria-pressed="${state.filter===t}" title="Filtrar: ${l}">${icon(t,20)}<div style="min-width:0"><b>${d}/${xs.length}</b><span>${l}</span></div></button>`}).join("");
+ $("#filterInfo").innerHTML=state.filter?`Mostrando só <b>${TYPES[state.filter]}</b> · <a href="#" id="clearF" style="color:var(--gold)">ver tudo</a>`:"";
+}
+
+function renderList(){
+ const groups=TABS[state.tab];let html="";
+ for(const g of groups){
+  let gh="";
+  for(const ar of g.areas){
+   let items=itemsOf(ar);
+   const total=items.length, done=items.filter(i=>state.c[i.id]).length;
+   if(state.filter){items=items.filter(i=>i.t===state.filter);if(!items.length)continue}
+   const byType={};for(const i of itemsOf(ar)){(byType[i.t]??=[0,0]);byType[i.t][1]++;if(state.c[i.id])byType[i.t][0]++}
+   const counts=Object.entries(byType).map(([t,[d,n]])=>`<span class="${d===n?"ok":""}">${icon(t,13)}${d}/${n} ${TYPES[t]}</span>`).join("");
+   const open=!!state.open[ar.id]||!!state.filter;
+   const shown=state.hide?items.filter(i=>!state.c[i.id]):items;
+   let body="";
+   if(open){
+    body=`<div class="abody">`+(shown.length?shown.map(i=>`<label class="item ${state.c[i.id]?"checked":""}">
+      <input type="checkbox" data-id="${i.id}" ${state.c[i.id]?"checked":""}>
+      ${icon(i.t,24)}
+      <span class="lbl"><b>${esc(i.l)}</b>${state.hints&&i.h?`<em>${esc(i.h)}</em>`:""}</span>
+      ${i.custom?`<button class="del" data-del="${ar.id}|${i.id}" aria-label="Remover item">×</button>`:tagsHTML(state.hints?i.a:"")}
+     </label>`).join(""):`<div class="empty">Tudo feito aqui. ✓</div>`)
+     +`<form class="addrow" data-add="${ar.id}"><select aria-label="Tipo" id="t-${ar.id}">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="n-${ar.id}" placeholder="Algo a mais nesta área…" aria-label="Novo item"><button>+ adicionar</button></form></div>`;
+   }
+   gh+=`<section class="area ${open?"open":""} ${done===total?"done":""}" id="a-${ar.id}">
+    <button class="ahead" data-toggle="${ar.id}" aria-expanded="${open}">${art(ar.biome)}
+     <div style="min-width:0"><h2>${esc(ar.name)}</h2><div class="counts">${counts}</div></div>
+     <div class="prog">${done}/${total}<div class="bar"><i style="width:${total?done/total*100:0}%"></i></div><svg class="chev" width="18" height="18"><use href="#i-chev"/></svg></div>
+    </button>${body}</section>`;
+  }
+  if(gh)html+=`<div class="grouptitle">${esc(g.g)}</div>`+gh;
+ }
+ $("#list").innerHTML=html||`<div class="empty">Nada deste tipo nesta aba.</div>`;
+}
+function render(){renderScore();renderList()}
+
+/* ---------- Eventos ---------- */
+document.addEventListener("change",e=>{
+ const id=e.target.dataset?.id;
+ if(id){if(e.target.checked)state.c[id]=1;else delete state.c[id];save();render();return}
+ if(e.target.id==="optHints"){state.hints=e.target.checked;save(false);renderList()}
+ if(e.target.id==="optHide"){state.hide=e.target.checked;save(false);renderList()}
+});
+document.addEventListener("click",e=>{
+ const tg=e.target.closest("[data-toggle]");
+ if(tg){const id=tg.dataset.toggle;state.open[id]=!state.open[id];save(false);renderList();return}
+ const del=e.target.closest("[data-del]");
+ if(del){e.preventDefault();const [ar,id]=del.dataset.del.split("|");state.x[ar]=(state.x[ar]||[]).filter(x=>x.id!==id);delete state.c[id];save();render();return}
+ const f=e.target.closest("[data-f]");
+ if(f){state.filter=state.filter===f.dataset.f?null:f.dataset.f;
+  // vai para a aba que tem esse tipo, se a atual não tiver
+  const has=t=>TABS[t].some(g=>g.areas.some(a=>itemsOf(a).some(i=>i.t===state.filter)));
+  if(state.filter&&!has(state.tab))state.tab=Object.keys(TABS).find(has)||state.tab;
+  setTab(state.tab);save(false);render();return}
+ if(e.target.id==="clearF"){e.preventDefault();state.filter=null;save(false);render();return}
+ const tab=e.target.closest("[data-tab]");
+ if(tab){state.tab=tab.dataset.tab;setTab(state.tab);save(false);render();window.scrollTo({top:0});return}
+});
+document.addEventListener("submit",e=>{
+ const ar=e.target.dataset.add;if(!ar)return;e.preventDefault();
+ const inp=document.getElementById("n-"+ar),t=document.getElementById("t-"+ar).value,l=inp.value.trim();if(!l)return;
+ (state.x[ar]??=[]).push({id:`${ar}.u${Date.now().toString(36)}`,t,l,h:"Adicionado por você"});save();render();
+ document.getElementById("n-"+ar)?.focus();
+});
+function setTab(t){document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t))}
+$("#expandAll").onclick=()=>{for(const g of TABS[state.tab])for(const a of g.areas)state.open[a.id]=true;save(false);renderList()};
+$("#collapseAll").onclick=()=>{state.open={};save(false);renderList()};
+$("#resetBtn").onclick=()=>{$("#resetConfirm").hidden=false};
+$("#resetNo").onclick=()=>{$("#resetConfirm").hidden=true};
+$("#resetYes").onclick=()=>{state.c={};$("#resetConfirm").hidden=true;save();render()};
+
+$("#optHints").checked=state.hints;$("#optHide").checked=state.hide;setTab(state.tab);render();
+
+/* ---------- Sincronizar com o banco de dados (Vercel) ---------- */
+const CODE_KEY="zelda-oot-code";
+let code=null;try{code=localStorage.getItem(CODE_KEY)}catch(e){}
+const box=document.createElement("div");box.className="syncbox";box.id="syncbox";
+document.querySelector(".foot").prepend(box);
+function renderBox(msg,err){
+ if(code){box.innerHTML=`<h3>Nuvem conectada</h3><p class="${err?"err":""}">${esc(msg||"Seu progresso está salvo no banco de dados.")}</p><p>Código: <b>${esc(code)}</b> · use o mesmo código em outro aparelho para ver o mesmo progresso.</p><div><button class="btn ghost" id="syncNow" type="button">Sincronizar agora</button> <button class="btn ghost" id="logout" type="button">Trocar código</button></div>`}
+ else{box.innerHTML=`<h3>Salvar na nuvem</h3><p class="${err?"err":""}">${esc(msg||"Crie um código só seu (pelo menos 6 letras ou números). Com ele seu progresso fica guardado no banco de dados e aparece em qualquer aparelho.")}</p><form id="codeForm"><input id="codeIn" autocomplete="off" autocapitalize="none" placeholder="ex: link-hyrule-1986" aria-label="Código"><button class="btn">Conectar</button></form>`}
+}
+async function api(method,body){
+ const r=await fetch("/api/progress",{method,headers:{"content-type":"application/json","x-code":code},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+ if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||("Erro "+r.status));
+ return r.json();
+}
+docRef={set:d=>api("PUT",d)};
+async function pull(){
+ if(!code)return;
+ renderBox("Sincronizando…");
+ try{
+  const r=await api("GET");
+  if(r&&r.u&&(r.u>(state.u||0))){state.c=r.c||{};state.x=r.x||{};state.u=r.u;try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){};render()}
+  else if((state.u||0)>((r&&r.u)||0)){await api("PUT",{c:state.c,x:state.x,u:state.u})}
+  renderBox("Tudo salvo no banco de dados ✓");syncMsg("Salvo na nuvem — aparece em qualquer aparelho com o seu código.");
+ }catch(e){renderBox("Não consegui falar com o servidor agora. O progresso continua salvo neste aparelho e sobe quando a conexão voltar.",true)}
+}
+const _origSync=syncMsg;
+box.addEventListener("submit",e=>{e.preventDefault();const v=document.getElementById("codeIn").value.trim();
+ if(!/^[\w\-.]{6,64}$/.test(v)){renderBox("O código precisa ter de 6 a 64 letras, números, - ou _ (sem espaços).",true);return}
+ code=v;try{localStorage.setItem(CODE_KEY,code)}catch(e){};pull()});
+box.addEventListener("click",e=>{
+ if(e.target.id==="syncNow")pull();
+ if(e.target.id==="logout"){code=null;try{localStorage.removeItem(CODE_KEY)}catch(e){};renderBox()}
+});
+window.addEventListener("online",pull);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pull()});
+renderBox();pull();
+</script>
+</body></html>
